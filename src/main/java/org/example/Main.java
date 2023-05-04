@@ -1,13 +1,12 @@
 package org.example;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Scanner;
-
+import java.util.*;
+import java.sql.*;
 
 public class Main {
 
     public static String MealPlanner(String category, String name, List<String> Ingredients) {
+
         String meal = String.format("%nCategory: %s%nName: %s%nIngredients:%n", category, name);
         String ingre = "";
         for (String ingredient : Ingredients
@@ -16,10 +15,60 @@ public class Main {
         }
         return meal + ingre;
     }
-    public static void main(String[] args) throws InterruptedException {
+    public static void main(String[] args) throws SQLException {
+        Map<Integer, List<String>> map = new HashMap<>();
+
+        String Complete_meal = "";
+        int meal_id = 0;
+        //setting the connection with the database
+        String DB_URL = "jdbc:postgresql:meals_db";
+        String USER = "postgres";
+        String PASS = "1111";
+
+
+        Connection connection = DriverManager.getConnection(DB_URL, USER, PASS);
+        connection.setAutoCommit(true);
+        //creating tables
+        Statement statement = connection.createStatement();
+
+        //statement.executeUpdate("drop table if exists meals");
+        statement.executeUpdate("create table if not exists meals (" +
+                "category varchar," +
+                "meal varchar," +
+                "meal_id INT" +
+                ")");
+        //statement.executeUpdate("drop table if exists ingredients");
+        statement.executeUpdate("create table if not exists ingredients (" +
+                "ingredient varchar(1024)," +
+                "ingredient_id INT," +
+                "meal_id INT" +
+                ")");
+        ResultSet rs = statement.executeQuery("select * from meals");
+        while (rs.next()) {
+            List<String> list = new ArrayList<>();
+            String category = rs.getString("category");
+            list.add(category);
+            list.add(rs.getString("meal"));
+            map.put(rs.getInt("meal_id"), list);
+        }
+        rs.close();
+        for (Map.Entry<Integer, List<String>> meal :
+                map.entrySet()) {
+            List<String> ingredients = new ArrayList<>();
+            ResultSet rs_Ingredient = statement.executeQuery("select * from ingredients");
+            while (rs_Ingredient.next()) {
+                if (meal.getKey() == rs_Ingredient.getInt("meal_id")) {
+                    ingredients.add(rs_Ingredient.getString("ingredient"));
+                }
+            }
+            Complete_meal += MealPlanner(meal.getValue().get(0), meal.getValue().get(1), ingredients);
+        }
+        if (!Complete_meal.equals("")) {
+            meal_id = map.size() + 1;
+        }
         Scanner scanner = new Scanner(System.in);
         String regex = "[a-zA-Z ]+";
-        String Complete_meal = "";
+
         while(true) {
             System.out.print("What would you like to do (add, show, exit)?");
             scanner.useDelimiter("\\n");
@@ -51,23 +100,33 @@ public class Main {
                         }
                     }
                     System.out.println("The meal has been added!");
+
+                    //saving the mael in tables
+                    String sql = String.format("insert into meals (category, meal, meal_id) values ('%s', '%s', %d)", meal, nameOfMale, meal_id);
+                    statement.executeUpdate(sql);
+                    for (int i = 0; i < ingredients.size(); i++) {
+                        sql = String.format("insert into ingredients  values ('%s', %d, %d)", ingredients.get(i), i, meal_id);
+                        statement.executeUpdate(sql);
+                    }
+                    meal_id ++;
+
                     Complete_meal += MealPlanner(meal, nameOfMale, ingredients);
 
                 }
                 case "show" ->  {
                     if (Complete_meal.equals("")) {
                         System.out.println("No meals saved. Add a meal first.");
-                    } else {
+                    }else {
                         System.out.println(Complete_meal);
                     }
                 }
                 case "exit" -> {
                     System.out.println("Bye!");
+                    statement.close();
+                    connection.close();
                     return;
                 }
             }
-
         }
-
     }
 }
