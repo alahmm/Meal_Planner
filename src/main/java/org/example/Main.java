@@ -15,6 +15,16 @@ public class Main {
         }
         return meal + ingre;
     }
+    public static String MealPlanner(String name, List<String> Ingredients) {
+
+        String meal = String.format("%nName: %s%nIngredients:%n", name);
+        String ingre = "";
+        for (String ingredient : Ingredients
+        ) {
+            ingre += String.format("%s%n", ingredient);
+        }
+        return meal + ingre;
+    }
     public static void main(String[] args) throws SQLException {
         Map<Integer, List<String>> map = new HashMap<>();
 
@@ -66,6 +76,7 @@ public class Main {
         if (!Complete_meal.equals("")) {
             meal_id = map.size() + 1;
         }
+
         Scanner scanner = new Scanner(System.in);
         String regex = "[a-zA-Z ]+";
 
@@ -114,9 +125,40 @@ public class Main {
 
                 }
                 case "show" ->  {
+                    System.out.println("Which category do you want to print (breakfast, lunch, dinner)?");
+                    String whichCategory = scanner.next();
+
+                    while (!whichCategory.equals("breakfast") && !whichCategory.equals("lunch") && !whichCategory.equals("dinner")) {
+                        System.out.println("Wrong meal category! Choose from: breakfast, lunch, dinner.");
+                        whichCategory = scanner.next();
+                    }
+                    Complete_meal = "";
+                    map = new HashMap<>();
+                    String sql = String.format("select * from meals where category = '%s'", whichCategory);
+                    rs = statement.executeQuery(sql);
+                    while (rs.next()) {
+                        List<String> list = new ArrayList<>();
+                        String category = rs.getString("category");
+                        list.add(category);
+                        list.add(rs.getString("meal"));
+                        map.put(rs.getInt("meal_id"), list);
+                    }
+                    rs.close();
+                    for (Map.Entry<Integer, List<String>> meal :
+                            map.entrySet()) {
+                        List<String> ingredients = new ArrayList<>();
+                        ResultSet rs_Ingredient = statement.executeQuery("select * from ingredients");
+                        while (rs_Ingredient.next()) {
+                            if (meal.getKey() == rs_Ingredient.getInt("meal_id")) {
+                                ingredients.add(rs_Ingredient.getString("ingredient"));
+                            }
+                        }
+                        Complete_meal += MealPlanner(meal.getValue().get(1), ingredients);
+                    }
                     if (Complete_meal.equals("")) {
-                        System.out.println("No meals saved. Add a meal first.");
+                        System.out.println("No meals found.");
                     }else {
+                        System.out.printf("Category: %s", whichCategory);
                         System.out.println(Complete_meal);
                     }
                 }
