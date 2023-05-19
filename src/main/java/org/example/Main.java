@@ -15,6 +15,7 @@ public class Main {
         }
         return meal + ingre;
     }
+
     public static String MealPlanner(String name, List<String> Ingredients) {
 
         String meal = String.format("%nName: %s%nIngredients:%n", name);
@@ -25,13 +26,14 @@ public class Main {
         }
         return meal + ingre;
     }
-    public static String Planner (String day, ResultSet rs, Scanner scanner, String category) throws SQLException {
+
+    public static String Planner(String day, ResultSet rs, Scanner scanner, String category) throws SQLException {
         List<String> listOfBreakfast = new ArrayList<>();
         while (rs.next()) {
             System.out.println(rs.getString("meal"));
             listOfBreakfast.add(rs.getString("meal"));
         }
-        System.out.printf("choose the %s for %s from the list above:%n",category, day);
+        System.out.printf("choose the %s for %s from the list above:%n", category, day);
         String theChosenBreakfast = scanner.next();
         while (!listOfBreakfast.contains(theChosenBreakfast)) {
             System.out.println("This meal doesn't exist. Choose a meal from the list above.");
@@ -39,6 +41,7 @@ public class Main {
         }
         return theChosenBreakfast;
     }
+
     public static List<String> PlannerForTheDay(String day, ResultSet rs, Scanner scanner, Statement statement) throws SQLException {
         List<String> listOfTheDay = new ArrayList<>();
         System.out.println(day);
@@ -59,6 +62,7 @@ public class Main {
 
         return listOfTheDay;
     }
+
     public static void main(String[] args) throws SQLException {
         Map<Integer, List<String>> map = new HashMap<>();
 
@@ -121,7 +125,7 @@ public class Main {
         Scanner scanner = new Scanner(System.in);
         String regex = "[a-zA-Z ]+";
 
-        while(true) {
+        while (true) {
             System.out.print("What would you like to do (add, show, plan, exit)?");
             scanner.useDelimiter("\\n");
             String toDo = scanner.next();
@@ -145,7 +149,7 @@ public class Main {
                     System.out.println("Input the ingredients:");
                     List<String> ingredients = Arrays.stream(scanner.next().split(",")).toList();
                     for (int i = 0; i < ingredients.size(); i++) {
-                        if  (!ingredients.get(i).matches(regex) || ingredients.get(i).equals("") || ingredients.get(i).equals(" ")) {
+                        if (!ingredients.get(i).matches(regex) || ingredients.get(i).equals("") || ingredients.get(i).equals(" ")) {
                             System.out.println("Wrong format. Use letters only!");
                             ingredients = Arrays.stream(scanner.next().split(",")).toList();
                             i = 0;
@@ -160,12 +164,12 @@ public class Main {
                         sql = String.format("insert into ingredients  values ('%s', %d, %d)", ingredients.get(i), i, meal_id);
                         statement.executeUpdate(sql);
                     }
-                    meal_id ++;
+                    meal_id++;
 
                     Complete_meal += MealPlanner(meal, nameOfMale, ingredients);
 
                 }
-                case "show" ->  {
+                case "show" -> {
                     System.out.println("Which category do you want to print (breakfast, lunch, dinner)?");
                     String whichCategory = scanner.next();
 
@@ -198,7 +202,7 @@ public class Main {
                     }
                     if (Complete_meal.equals("")) {
                         System.out.println("No meals found.");
-                    }else {
+                    } else {
                         System.out.printf("Category: %s", whichCategory);
                         System.out.println(Complete_meal);
                     }
@@ -206,8 +210,8 @@ public class Main {
                 case "plan" -> {
                     Map<String, List<String>> planOfTheWeek = new LinkedHashMap<>();
                     String[] theDaysOfTheWeek = {"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"};
-                    for (String day: theDaysOfTheWeek
-                         ) {
+                    for (String day : theDaysOfTheWeek
+                    ) {
                         planOfTheWeek.put(day, PlannerForTheDay(day, rs, scanner, statement));
                     }
                     String planString = "";
@@ -216,7 +220,7 @@ public class Main {
                         System.out.println(meal.getKey());
                         planString += String.format(meal.getKey() + "%n");
                         for (String variable : meal.getValue()
-                             ) {
+                        ) {
                             System.out.println(variable);
                             planString += String.format(variable + "%n");
                         }
