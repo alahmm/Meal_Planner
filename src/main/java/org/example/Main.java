@@ -289,7 +289,6 @@ public class Main {
                             ) {
                                 if (Objects.equals(meal, newMeal)) {
                                     listOfMealsID.add(rs.getInt("meal_id"));
-                                    //break;
                                 }
                             }
                         }
@@ -302,11 +301,9 @@ public class Main {
                         ) {
                             if (id == newVariable) {
                                 listOfIngredients.add(rs.getString("ingredient"));
-                                //break;
                             }
                         }
                     }
-                    //TO DO: eleminate duplication from the list of Ingredients than write how many time it is duplicated
                     Map<String, Integer> mapOfIngredients = new TreeMap<>();
                     for (String key : listOfIngredients
                     ) {
@@ -317,10 +314,7 @@ public class Main {
                             mapOfIngredients.put(key, 1);
                         }
                     }
-
-                    //saving the ingredients in a file works
                     String fileName = scanner.next();
-                    //File file = new File(fileName);
                     try (PrintWriter out = new PrintWriter(fileName)) {
                         for (Map.Entry<String, Integer> ingredient :
                                 mapOfIngredients.entrySet()) {
