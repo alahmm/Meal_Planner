@@ -1,0 +1,14 @@
+avocado
+banana
+bread
+cheese x4
+eggs
+flour x2
+ham
+milk x2
+oats
+peanut butter
+rice
+salami x2
+salmon
+tomato x2

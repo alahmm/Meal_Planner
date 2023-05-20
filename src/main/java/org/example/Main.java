@@ -1,5 +1,8 @@
 package org.example;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.PrintWriter;
 import java.util.*;
 import java.sql.*;
 
@@ -46,24 +49,31 @@ public class Main {
         List<String> listOfTheDay = new ArrayList<>();
         System.out.println(day);
         rs = statement.executeQuery("select meal from meals where category = 'breakfast' order by meals");
-        String WhatToEat = String.format("breakfast: %s", Planner(day, rs, scanner, "breakfast"));
+        String chosenBreakfast = Planner(day, rs, scanner, "breakfast");
+        String WhatToEat = String.format("breakfast: %s", chosenBreakfast);
         listOfTheDay.add(WhatToEat);
         rs.close();
         rs = statement.executeQuery("select meal from meals where category = 'lunch'");
-        WhatToEat = String.format("lunch: %s", Planner(day, rs, scanner, "lunch"));
+        String chosenLunch = Planner(day, rs, scanner, "lunch");
+        WhatToEat = String.format("lunch: %s", chosenLunch);
         listOfTheDay.add(WhatToEat);
         rs.close();
         rs = statement.executeQuery("select meal from meals where category = 'dinner'");
-        WhatToEat = String.format("dinner: %s", Planner(day, rs, scanner, "dinner"));
+        String chosenDinner = Planner(day, rs, scanner, "dinner");
+        WhatToEat = String.format("dinner: %s", chosenDinner);
         listOfTheDay.add(WhatToEat);
         rs.close();
+        
+        
+        String sql = String.format("insert into plan_for_each_meal(breakfast, lunch, dinner) values ('%s', '%s', '%s')", chosenBreakfast, chosenLunch, chosenDinner);
+        statement.executeUpdate(sql);
         System.out.printf("Yeah! We planned the meals for %s%n", day);
         System.out.println();
 
         return listOfTheDay;
     }
 
-    public static void main(String[] args) throws SQLException {
+    public static void main(String[] args) throws SQLException, FileNotFoundException {
         Map<Integer, List<String>> map = new HashMap<>();
 
         String Complete_meal = "";
@@ -93,10 +103,16 @@ public class Main {
                 ")");
 
         //create table named plan
-        statement.executeUpdate("drop table if exists plan");
+        //statement.executeUpdate("drop table if exists plan");
         statement.executeUpdate("create table if not exists plan(" +
                 "plan_text varchar," +
                 "plan_id INT" +
+                ")");
+        statement.executeUpdate("drop table if exists plan_for_each_meal");
+        statement.executeUpdate("create table if not exists plan_for_each_meal(" +
+                "breakfast varchar," +
+                "lunch varchar," +
+                "dinner varchar" +
                 ")");
         ResultSet rs = statement.executeQuery("select * from meals");
         while (rs.next()) {
@@ -126,7 +142,7 @@ public class Main {
         String regex = "[a-zA-Z ]+";
 
         while (true) {
-            System.out.print("What would you like to do (add, show, plan, exit)?");
+            System.out.print("What would you like to do (add, show, plan, save, exit)?");
             scanner.useDelimiter("\\n");
             String toDo = scanner.next();
             while (!toDo.equals("add") && !toDo.equals("show") && !toDo.equals("exit")) {
@@ -230,6 +246,92 @@ public class Main {
                     }
                     String sql = String.format("insert into plan values ('%s', %d)", planString, 1);
                     statement.executeUpdate(sql);
+
+                }
+                case "save" -> {
+                    List<String> listOfMeals = new ArrayList<>();
+                    List<Integer> listOfMealsID = new ArrayList<>();
+                    List<String> listOfIngredients = new ArrayList<>();
+                    ResultSet resultSet = statement.executeQuery("select * from plan");
+                    String plan = "";
+                    while (resultSet.next()) {
+                        plan = resultSet.getString("plan_text");
+
+                    }
+                    resultSet.close();
+                    if (plan.equals("")) {
+                        System.out.println("Unable to save. Plan your meals first.");
+                        String whatToDo = scanner.next();
+                        if (whatToDo.equals("exit")) {
+                            System.out.println("Bye!");
+                            statement.close();
+                            connection.close();
+                            return;
+                        }
+                    } else {
+                        System.out.println("Input a filename:");
+
+                        rs = statement.executeQuery("select * from plan_for_each_meal");
+                        while(rs.next()) {
+                            listOfMeals.add(rs.getString("breakfast"));
+                            listOfMeals.add(rs.getString("lunch"));
+                            listOfMeals.add(rs.getString("dinner"));
+                        }
+
+                        rs.close();
+
+                        rs = statement.executeQuery("select * from meals");
+                        String newMeal = "";
+
+                        while (rs.next()) {
+                            newMeal = rs.getString("meal");
+                            for (String meal : listOfMeals
+                            ) {
+                                if (Objects.equals(meal, newMeal)) {
+                                    listOfMealsID.add(rs.getInt("meal_id"));
+                                    //break;
+                                }
+                            }
+                        }
+                    }
+                    rs.close();
+                    rs = statement.executeQuery("select * from ingredients");
+                    while (rs.next()) {
+                        int newVariable = rs.getInt("meal_id");
+                        for (int id : listOfMealsID
+                        ) {
+                            if (id == newVariable) {
+                                listOfIngredients.add(rs.getString("ingredient"));
+                                //break;
+                            }
+                        }
+                    }
+                    //TO DO: eleminate duplication from the list of Ingredients than write how many time it is duplicated
+                    Map<String, Integer> mapOfIngredients = new TreeMap<>();
+                    for (String key : listOfIngredients
+                    ) {
+                        if (mapOfIngredients.containsKey(key)) {
+                            int value = mapOfIngredients.get(key);
+                            mapOfIngredients.replace(key, value, value + 1);
+                        } else {
+                            mapOfIngredients.put(key, 1);
+                        }
+                    }
+
+                    //saving the ingredients in a file works
+                    String fileName = scanner.next();
+                    //File file = new File(fileName);
+                    try (PrintWriter out = new PrintWriter(fileName)) {
+                        for (Map.Entry<String, Integer> ingredient :
+                                mapOfIngredients.entrySet()) {
+                            if(ingredient.getValue() != 1) {
+                                out.println(ingredient.getKey() + " x" + ingredient.getValue());
+                            } else {
+                                out.println(ingredient.getKey());
+                            }
+                        }
+                    }
+                    System.out.println("Saved!");
 
                 }
                 case "exit" -> {
